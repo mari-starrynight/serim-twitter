@@ -517,18 +517,34 @@ Sans image ni vidéo, il est plus court que les autres.</p>
     });
 
     // ----- J'aime / Retweet -----
-    function fmt(n) { return n.toLocaleString('fr-FR'); }
+    // Lit un compteur : "357" -> 357 ; "18K" -> 18000 ; "1,2M" -> 1200000 (le suffixe est gardé à part)
+    function parseCount(text) {
+      var m = text.trim().match(/^([\d\s\u202f\u00a0.,]*\d)\s*([KkMm])?$/);
+      if (!m) return { value: 0, suffix: '' };
+      var suffix = m[2] || '';
+      if (!suffix) return { value: parseInt(m[1].replace(/\D/g, ''), 10) || 0, suffix: '' };
+      var mult = suffix.toLowerCase() === 'm' ? 1000000 : 1000;
+      return { value: Math.round(parseFloat(m[1].replace(/\s/g, '').replace(',', '.')) * mult), suffix: suffix };
+    }
+
+    // Réécrit un compteur en gardant son suffixe : 18001 + "K" -> "18K", 18401 + "K" -> "18,4K"
+    function fmt(value, suffix) {
+      if (!suffix) return value.toLocaleString('fr-FR');
+      var div = suffix.toLowerCase() === 'm' ? 1000000 : 1000;
+      var x = Math.round(value / div * 10) / 10;           // 1 décimale maximum
+      return String(x).replace('.', ',') + suffix;
+    }
 
     function setupToggle(tweet, btnSel, statSel) {
       var btn  = tweet.querySelector(btnSel);
       var stat = tweet.querySelector(statSel);
       if (!btn) return;
-      var base = stat ? parseInt(stat.textContent.replace(/\D/g, ''), 10) || 0 : 0;
+      var parsed = stat ? parseCount(stat.textContent) : { value: 0, suffix: '' };
 
       btn.addEventListener('click', function () {
         var on = btn.classList.toggle('on');
         btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-        if (stat) { stat.textContent = fmt(base + (on ? 1 : 0)); stat.classList.toggle('on', on); }
+        if (stat) { stat.textContent = fmt(parsed.value + (on ? 1 : 0), parsed.suffix); stat.classList.toggle('on', on); }
 
         // relance l'animation uniquement quand on active
         btn.classList.remove('pop');
