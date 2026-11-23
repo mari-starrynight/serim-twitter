@@ -215,6 +215,64 @@
   .actions .r.on svg { stroke: var(--retweet); }
   .actions .l.on svg { stroke: var(--like); fill: var(--like); }
 
+  /* bouton commentaire */
+  .actions .c:hover { background: rgba(29, 155, 240, .1); }
+  .actions .c.open svg { stroke: var(--link); }
+  .count.st-c.on { color: var(--link); }
+
+  /* encart de réponse (s'ouvre sous le tweet) */
+  .reply-box { display: none; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .reply-box.open { display: block; }
+  .reply-to { color: var(--muted); font-size: 14px; margin: 0 0 8px 46px; }
+  .reply-to span { color: var(--link); }
+  .reply-form { display: flex; gap: 10px; align-items: flex-start; }
+  .r-avatar {
+    width: 36px; height: 36px; flex: none;
+    border-radius: 50%; overflow: hidden;
+    background: var(--border);
+    display: grid; place-items: center;
+    object-fit: cover;
+  }
+  .r-avatar svg { width: 22px; height: 22px; fill: var(--muted); stroke: none; }
+  .reply-field { flex: 1; min-width: 0; }
+  .reply-field textarea {
+    display: block; width: 100%;
+    border: 0; outline: 0; resize: none;
+    background: transparent; color: var(--text);
+    font: inherit; font-size: 17px; line-height: 1.35;
+    min-height: 36px; max-height: 180px;
+    padding: 6px 0;
+  }
+  .reply-field textarea::placeholder { color: var(--muted); }
+  .reply-foot { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding-top: 6px; }
+  .r-count { font-size: 13px; color: var(--muted); }
+  .r-count.warn { color: #f4212e; }
+  .r-send {
+    border: 0; border-radius: 999px;
+    background: var(--link); color: #fff;
+    font: inherit; font-size: 15px; font-weight: 700;
+    padding: 7px 16px;
+    cursor: pointer;
+    transition: opacity .15s, filter .15s;
+  }
+  .r-send:hover:not(:disabled) { filter: brightness(.92); }
+  .r-send:disabled { opacity: .5; cursor: default; }
+  .r-send:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+  /* réponses postées */
+  .reply {
+    display: flex; gap: 10px;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+    animation: reply-in .25s ease-out;
+  }
+  .reply-body { flex: 1; min-width: 0; }
+  .reply-meta { font-size: 15px; line-height: 1.25; }
+  .reply-name { font-weight: 700; }
+  .reply-handle { color: var(--muted); }
+  .reply-text { margin-top: 2px; font-size: 15px; line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
+  @keyframes reply-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
   /* animation du coeur : rebond + éclat de petits points */
   .actions .l.pop svg { animation: heart-pop .45s cubic-bezier(.17, .89, .32, 1.49); }
   .actions .l.pop::after {
@@ -268,6 +326,7 @@
   @media (prefers-reduced-motion: reduce) {
     .track { transition: none; }
     .actions .pop svg, .actions .pop::after { animation: none; }
+    .reply { animation: none; }
   }
 </style>
 </head>
@@ -315,7 +374,7 @@
           <p class="date"><b>4:00 PM</b> · 23 apr. 2017</p>
 
           <div class="actions">
-            <div class="act"><span class="c"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg></span><span class="count">257</span></div>
+            <div class="act"><button class="c" type="button" aria-expanded="false" aria-label="Répondre"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg></button><span class="count st-c">257</span></div>
             <div class="act"><button class="r" type="button" aria-pressed="false" aria-label="Retweeter"><svg viewBox="0 0 24 24"><path d="M4 10l3-3 3 3M7 7v9a2 2 0 0 0 2 2h5M20 14l-3 3-3-3M17 17V8a2 2 0 0 0-2-2h-5"/></svg></button><span class="count st-r">18K</span></div>
             <div class="act"><button class="l" type="button" aria-pressed="false" aria-label="Aimer"><svg viewBox="0 0 24 24"><path d="M12 21S3 15.5 3 9.5C3 6.5 5.2 4.5 7.8 4.5c1.7 0 3.3.9 4.2 2.4.9-1.5 2.5-2.4 4.2-2.4 2.6 0 4.8 2 4.8 5C21 15.5 12 21 12 21z"/></svg></button><span class="count st-l">26K</span></div>
             <div class="act"><span><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span></div>
@@ -350,7 +409,7 @@
           <p class="date"><b>6:57 PM</b> · 5 may 2017</p>
 
           <div class="actions">
-            <div class="act"><span class="c"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg></span><span class="count">6</span></div>
+            <div class="act"><button class="c" type="button" aria-expanded="false" aria-label="Répondre"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg></button><span class="count st-c">6</span></div>
             <div class="act"><button class="r" type="button" aria-pressed="false" aria-label="Retweeter"><svg viewBox="0 0 24 24"><path d="M4 10l3-3 3 3M7 7v9a2 2 0 0 0 2 2h5M20 14l-3 3-3-3M17 17V8a2 2 0 0 0-2-2h-5"/></svg></button><span class="count st-r">58</span></div>
             <div class="act"><button class="l" type="button" aria-pressed="false" aria-label="Aimer"><svg viewBox="0 0 24 24"><path d="M12 21S3 15.5 3 9.5C3 6.5 5.2 4.5 7.8 4.5c1.7 0 3.3.9 4.2 2.4.9-1.5 2.5-2.4 4.2-2.4 2.6 0 4.8 2 4.8 5C21 15.5 12 21 12 21z"/></svg></button><span class="count st-l">654</span></div>
             <div class="act"><span><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span></div>
@@ -384,7 +443,7 @@
           <p class="date"><b>09:15</b> · 21 nov. 2026 · <b>870</b> vues</p>
 
           <div class="actions">
-            <div class="act"><span class="c"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg></span><span class="count">3</span></div>
+            <div class="act"><button class="c" type="button" aria-expanded="false" aria-label="Répondre"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg></button><span class="count st-c">3</span></div>
             <div class="act"><button class="r" type="button" aria-pressed="false" aria-label="Retweeter"><svg viewBox="0 0 24 24"><path d="M4 10l3-3 3 3M7 7v9a2 2 0 0 0 2 2h5M20 14l-3 3-3-3M17 17V8a2 2 0 0 0-2-2h-5"/></svg></button><span class="count st-r">1</span></div>
             <div class="act"><button class="l" type="button" aria-pressed="false" aria-label="Aimer"><svg viewBox="0 0 24 24"><path d="M12 21S3 15.5 3 9.5C3 6.5 5.2 4.5 7.8 4.5c1.7 0 3.3.9 4.2 2.4.9-1.5 2.5-2.4 4.2-2.4 2.6 0 4.8 2 4.8 5C21 15.5 12 21 12 21z"/></svg></button><span class="count st-l">24</span></div>
             <div class="act"><span><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span></div>
@@ -429,7 +488,7 @@
           <p class="date"><b>22:30</b> · 23 nov. 2026 · <b>5,6 k</b> vues</p>
 
           <div class="actions">
-            <div class="act"><span class="c"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg></span><span class="count">9</span></div>
+            <div class="act"><button class="c" type="button" aria-expanded="false" aria-label="Répondre"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg></button><span class="count st-c">9</span></div>
             <div class="act"><button class="r" type="button" aria-pressed="false" aria-label="Retweeter"><svg viewBox="0 0 24 24"><path d="M4 10l3-3 3 3M7 7v9a2 2 0 0 0 2 2h5M20 14l-3 3-3-3M17 17V8a2 2 0 0 0-2-2h-5"/></svg></button><span class="count st-r">21</span></div>
             <div class="act"><button class="l" type="button" aria-pressed="false" aria-label="Aimer"><svg viewBox="0 0 24 24"><path d="M12 21S3 15.5 3 9.5C3 6.5 5.2 4.5 7.8 4.5c1.7 0 3.3.9 4.2 2.4.9-1.5 2.5-2.4 4.2-2.4 2.6 0 4.8 2 4.8 5C21 15.5 12 21 12 21z"/></svg></button><span class="count st-l">142</span></div>
             <div class="act"><span><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span></div>
@@ -460,7 +519,7 @@ Sans image ni vidéo, il est plus court que les autres.</p>
           <p class="date"><b>07:40</b> · 24 nov. 2026 · <b>1,2 k</b> vues</p>
 
           <div class="actions">
-            <div class="act"><span class="c"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg></span><span class="count">5</span></div>
+            <div class="act"><button class="c" type="button" aria-expanded="false" aria-label="Répondre"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg></button><span class="count st-c">5</span></div>
             <div class="act"><button class="r" type="button" aria-pressed="false" aria-label="Retweeter"><svg viewBox="0 0 24 24"><path d="M4 10l3-3 3 3M7 7v9a2 2 0 0 0 2 2h5M20 14l-3 3-3-3M17 17V8a2 2 0 0 0-2-2h-5"/></svg></button><span class="count st-r">3</span></div>
             <div class="act"><button class="l" type="button" aria-pressed="false" aria-label="Aimer"><svg viewBox="0 0 24 24"><path d="M12 21S3 15.5 3 9.5C3 6.5 5.2 4.5 7.8 4.5c1.7 0 3.3.9 4.2 2.4.9-1.5 2.5-2.4 4.2-2.4 2.6 0 4.8 2 4.8 5C21 15.5 12 21 12 21z"/></svg></button><span class="count st-l">57</span></div>
             <div class="act"><span><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span></div>
@@ -503,7 +562,8 @@ Sans image ni vidéo, il est plus court que les autres.</p>
 
     // flèches du clavier
     document.addEventListener('keydown', function (e) {
-      if (e.target && e.target.tagName === 'VIDEO') return;   // flèches = avance/retour dans la vidéo
+      var tag = e.target && e.target.tagName;
+      if (tag === 'VIDEO' || tag === 'TEXTAREA') return;   // flèches = vidéo ou texte en cours d'écriture
       if (e.key === 'ArrowLeft')  show(index - 1);
       if (e.key === 'ArrowRight') show(index + 1);
     });
@@ -512,7 +572,7 @@ Sans image ni vidéo, il est plus court que les autres.</p>
     var startX = null;
     track.addEventListener('touchstart', function (e) {
       // pas de glissement de tweet quand on touche la vidéo (barre de lecture)
-      startX = (e.target.closest && e.target.closest('video')) ? null : e.touches[0].clientX;
+      startX = (e.target.closest && e.target.closest('video, .reply-box')) ? null : e.touches[0].clientX;
     }, { passive: true });
     track.addEventListener('touchend', function (e) {
       if (startX === null) return;
@@ -557,10 +617,120 @@ Sans image ni vidéo, il est plus court que les autres.</p>
       });
     }
 
+    // ----- Réponses (bouton commentaire) -----
+    // Ta "identité" quand tu réponds. avatar : lien d'une image, ou laisse '' pour une silhouette grise.
+    var ME = { name: 'Moi', handle: '@moi', avatar: '' };
+
+    function avatarEl() {
+      if (ME.avatar) {
+        var img = document.createElement('img');
+        img.className = 'r-avatar';
+        img.src = ME.avatar;
+        img.alt = '';
+        return img;
+      }
+      var d = document.createElement('div');
+      d.className = 'r-avatar';
+      d.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zm0 2c-4.4 0-8 2.5-8 5.5V21h16v-1.5c0-3-3.6-5.5-8-5.5z"/></svg>';
+      return d;
+    }
+
+    function setupReplies(tweet) {
+      var btn     = tweet.querySelector('.actions .c');
+      var stat    = tweet.querySelector('.st-c');
+      var actions = tweet.querySelector('.actions');
+      var who     = tweet.querySelector('.who .handle');
+      if (!btn || !actions) return;
+
+      var box = document.createElement('div');
+      box.className = 'reply-box';
+      box.innerHTML =
+        '<p class="reply-to">En réponse à <span></span></p>' +
+        '<div class="reply-form"><div class="r-slot"></div>' +
+        '<div class="reply-field">' +
+          '<textarea rows="1" maxlength="280" placeholder="Postez votre réponse" aria-label="Votre réponse"></textarea>' +
+          '<div class="reply-foot"><span class="r-count"></span>' +
+          '<button type="button" class="r-send" disabled>Répondre</button></div>' +
+        '</div></div>';
+      box.querySelector('.reply-to span').textContent = who ? who.textContent : '';
+      box.querySelector('.r-slot').replaceWith(avatarEl());
+
+      var list = document.createElement('div');
+      list.className = 'replies';
+      actions.after(box);
+      box.after(list);
+
+      var ta   = box.querySelector('textarea');
+      var send = box.querySelector('.r-send');
+      var cnt  = box.querySelector('.r-count');
+
+      function setOpen(open) {
+        box.classList.toggle('open', open);
+        btn.classList.toggle('open', open);
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open) ta.focus();
+      }
+
+      function refresh() {
+        ta.style.height = 'auto';
+        ta.style.height = Math.min(ta.scrollHeight, 180) + 'px';
+        send.disabled = ta.value.trim() === '';
+        var left = 280 - ta.value.length;
+        cnt.textContent = left <= 40 ? String(left) : '';
+        cnt.classList.toggle('warn', left <= 10);
+      }
+
+      function post() {
+        var text = ta.value.trim();
+        if (!text) return;
+
+        var r = document.createElement('div');
+        r.className = 'reply';
+        r.appendChild(avatarEl());
+        var body = document.createElement('div');
+        body.className = 'reply-body';
+        var meta = document.createElement('div');
+        meta.className = 'reply-meta';
+        var nm = document.createElement('span');
+        nm.className = 'reply-name';
+        nm.textContent = ME.name;
+        var hd = document.createElement('span');
+        hd.className = 'reply-handle';
+        hd.textContent = ' ' + ME.handle + ' · à l\'instant';
+        meta.appendChild(nm);
+        meta.appendChild(hd);
+        var tx = document.createElement('div');
+        tx.className = 'reply-text';
+        tx.textContent = text;                 // texte brut : aucun HTML interprété
+        body.appendChild(meta);
+        body.appendChild(tx);
+        r.appendChild(body);
+        list.insertBefore(r, list.firstChild); // la plus récente en haut
+
+        ta.value = '';
+        refresh();
+        if (stat) {
+          var c = parseCount(stat.textContent);
+          stat.textContent = fmt(c.value + 1, c.suffix);
+          stat.classList.add('on');
+        }
+        setOpen(false);
+      }
+
+      btn.addEventListener('click', function () { setOpen(!box.classList.contains('open')); });
+      ta.addEventListener('input', refresh);
+      ta.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); post(); }
+        if (e.key === 'Escape') { setOpen(false); btn.focus(); }
+      });
+      send.addEventListener('click', post);
+    }
+
     var tweets = document.querySelectorAll('.tweet');
     for (var t = 0; t < tweets.length; t++) {
       setupToggle(tweets[t], '.actions .l', '.st-l');
       setupToggle(tweets[t], '.actions .r', '.st-r');
+      setupReplies(tweets[t]);
     }
 
     show(0);
