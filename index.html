@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tweets</title>
+<style>
+  /* ====== COULEURS : modifie-les ici ====== */
+  :root {
+    --bg: #ffffff;          /* fond du tweet (mets "transparent" pour fondre avec le forum) */
+    --border: #eff3f4;      /* bordures */
+    --text: #0f1419;        /* texte principal */
+    --muted: #536471;       /* pseudo, heure, icônes */
+    --link: #1d9bf0;        /* @mentions, #hashtags, badge */
+    --like: #f91880;
+    --retweet: #00ba7c;
+    --arrow-border: #cfd9de; /* contour des flèches */
+    --slide-gap: 24px;       /* espace entre deux tweets dans le carrousel */
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { background: transparent; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text);
+    padding: 6px;
+  }
+
+  /* ---- Carrousel : [flèche] [tweets] [flèche] ---- */
+  .slider {
+    max-width: 640px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .arrow {
+    flex: none;
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--arrow-border);
+    background: var(--bg);
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+  .arrow svg {
+    width: 18px; height: 18px;
+    fill: none; stroke: var(--text);
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .arrow:hover { background: #f7f9f9; border-color: var(--muted); }
+  .arrow:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+  .arrow:disabled { opacity: .3; cursor: default; }
+  .arrow:disabled:hover { background: var(--bg); border-color: var(--arrow-border); }
+
+  .viewport {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    padding: 1px;               /* évite que la bordure du tweet soit rognée */
+  }
+
+  .track {
+    display: flex;
+    align-items: center;        /* les tweets plus courts restent centrés, au niveau des flèches */
+    gap: var(--slide-gap);      /* espace entre les tweets : on ne voit plus le bord du voisin */
+    transition: transform .35s ease;
+  }
+
+  .slide { flex: 0 0 100%; min-width: 0; }
+
+  /* ---- Tweet ---- */
+  .tweet {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 12px 16px;
+  }
+
+  .head { display: flex; gap: 12px; align-items: flex-start; }
+
+  .avatar {
+    width: 44px; height: 44px; flex: none;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--border);
+  }
+
+  .who { flex: 1; min-width: 0; line-height: 1.25; }
+  .name {
+    font-weight: 700; font-size: 15px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .badge { width: 17px; height: 17px; fill: var(--link); flex: none; }
+  .handle { display: block; color: var(--muted); font-size: 15px; }
+
+  .content {
+    margin-top: 10px;
+    font-size: 16px;
+    line-height: 1.4;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+  }
+  .content a { color: var(--link); text-decoration: none; }
+  .content a:hover { text-decoration: underline; }
+
+  .media {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    aspect-ratio: 16 / 9;
+  }
+  .media.single { grid-template-columns: 1fr; }
+  .media img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    background: var(--border);
+  }
+
+  /* ---- Citation de tweet (QRT) ---- */
+  .quote {
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .q-head {
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 12px 0;
+    font-size: 15px; line-height: 1.25;
+  }
+  .q-avatar {
+    width: 22px; height: 22px; flex: none;
+    border-radius: 50%; object-fit: cover;
+    background: var(--border);
+  }
+  .q-name { font-weight: 700; }
+  .q-head .badge { width: 15px; height: 15px; margin-left: -2px; }
+  .q-handle { color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .q-text {
+    padding: 4px 12px 10px;
+    font-size: 15px; line-height: 1.35;
+    white-space: pre-line; overflow-wrap: anywhere;
+  }
+  .q-video {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-top: 1px solid var(--border);
+  }
+
+  .date {
+    margin-top: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 15px;
+  }
+  .date b { color: var(--text); font-weight: 700; }
+
+
+  .actions {
+    display: flex; justify-content: space-between; align-items: center;
+    margin: 0 -7px;          /* aligne la 1re icône sur le bord du texte */
+    padding-top: 8px;
+  }
+  .act { display: flex; align-items: center; }
+  /* chaque icône (bouton ou non) a exactement la même boîte, pour un alignement parfait */
+  .act > span:not(.count), .act > button {
+    width: 34px; height: 34px;
+    display: grid; place-items: center;
+  }
+  .count {
+    min-width: 2ch;
+    margin-left: 1px;
+    font-size: 13px;
+    color: var(--muted);
+    transition: color .15s;
+  }
+  .count.st-r.on { color: var(--retweet); }
+  .count.st-l.on { color: var(--like); }
+  .actions svg {
+    display: block;
+    width: 20px; height: 20px;
+    fill: none; stroke: var(--muted);
+    stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+    transition: stroke .15s;
+  }
+  .actions .c:hover svg { stroke: var(--link); }
+  .actions .r:hover svg { stroke: var(--retweet); }
+  .actions .l:hover svg { stroke: var(--like); }
+
+  /* boutons retweet / j'aime */
+  .actions button {
+    position: relative;
+    background: none; border: 0; padding: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .actions button:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
+  .actions .r:hover { background: rgba(0, 186, 124, .1); }
+  .actions .l:hover { background: rgba(249, 24, 128, .1); }
+
+  /* état « activé » */
+  .actions .r.on svg { stroke: var(--retweet); }
+  .actions .l.on svg { stroke: var(--like); fill: var(--like); }
+
+  /* animation du coeur : rebond + éclat de petits points */
+  .actions .l.pop svg { animation: heart-pop .45s cubic-bezier(.17, .89, .32, 1.49); }
+  .actions .l.pop::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    width: 4px; height: 4px; margin: -2px 0 0 -2px;
+    border-radius: 50%;
+    box-shadow:
+      0 -15px 0 #f91880,  13px -8px 0 #ff7a00,  13px 8px 0 #f91880,
+      0 15px 0 #ff7a00,  -13px 8px 0 #f91880, -13px -8px 0 #ff7a00;
+    animation: heart-burst .5s ease-out forwards;
+    pointer-events: none;
+  }
+  @keyframes heart-pop {
+    0%   { transform: scale(.2); }
+    55%  { transform: scale(1.35); }
+    100% { transform: scale(1); }
+  }
+  @keyframes heart-burst {
+    0%   { transform: scale(.4); opacity: 1; }
+    100% { transform: scale(1.15); opacity: 0; }
+  }
+
+  /* animation du retweet : petit tour + anneau vert */
+  .actions .r.pop svg { animation: rt-spin .5s cubic-bezier(.17, .89, .32, 1.2); }
+  .actions .r.pop::after {
+    content: ""; position: absolute; inset: 2px;
+    border-radius: 50%;
+    border: 2px solid var(--retweet);
+    animation: rt-ring .45s ease-out forwards;
+    pointer-events: none;
+  }
+  @keyframes rt-spin {
+    0%   { transform: rotate(0) scale(.7); }
+    60%  { transform: rotate(200deg) scale(1.2); }
+    100% { transform: rotate(360deg) scale(1); }
+  }
+  @keyframes rt-ring {
+    0%   { transform: scale(.5); opacity: .9; }
+    100% { transform: scale(1.3); opacity: 0; }
+  }
+
+  @media (max-width: 480px) {
+    body { padding: 4px; }
+    .slider { gap: 4px; }
+    .arrow { width: 30px; height: 30px; }
+    .arrow svg { width: 15px; height: 15px; }
+    .tweet { padding: 10px 12px; }
+    .content { font-size: 15px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .track { transition: none; }
+    .actions .pop svg, .actions .pop::after { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="slider" id="slider">
+
+  <button class="arrow" id="prev" type="button" aria-label="Tweet précédent">
+    <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+
+  <div class="viewport">
+    <div class="track" id="track">
+
+      <!-- =====================================================
+           TWEET 1
+           Pour ajouter un tweet : copie un bloc <div class="slide">…</div>
+           entier et colle-le juste après le dernier. C'est tout, les
+           flèches s'adaptent toutes seules au nombre de tweets.
+           ===================================================== -->
+      <div class="slide">
+        <article class="tweet">
+          <div class="head">
+            <img class="avatar" src="https://via.placeholder.com/88" alt="Photo de profil">
+            <div class="who">
+              <span class="name">
+                Nom du personnage
+                <!-- Supprime ce <svg> pour retirer le badge certifié -->
+                <svg class="badge" viewBox="0 0 24 24" aria-label="Compte certifié">
+                  <path d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91C2.88 9.33 2 10.57 2 12s.88 2.67 2.19 3.34c-.46 1.39-.2 2.9.81 3.91s2.52 1.26 3.91.8c.66 1.31 1.9 2.19 3.33 2.19s2.67-.88 3.34-2.19c1.39.46 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z"/>
+                </svg>
+              </span>
+              <span class="handle">@pseudo_du_perso</span>
+            </div>
+          </div>
+
+          <p class="content">Voici le texte du premier tweet, avec une <a href="#">@mention</a> et un <a href="#">#hashtag</a>.
+Les retours à la ligne sont respectés.</p>
+
+          <div class="media">
+            <img src="https://via.placeholder.com/600x600/e1e8ed/536471?text=Image+1" alt="Image 1">
+            <img src="https://via.placeholder.com/600x600/e1e8ed/536471?text=Image+2" alt="Image 2">
+          </div>
+
+          <p class="date"><b>21:47</b> · 23 nov. 2026 · <b>12,4 k</b> vues</p>
+
+          <div class="actions">
+            <div class="act"><span class="c"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg></span><span class="count">14</span></div>
+            <div class="act"><button class="r" type="button" aria-pressed="false" aria-label="Retweeter"><svg viewBox="0 0 24 24"><path d="M4 10l3-3 3 3M7 7v9a2 2 0 0 0 2 2h5M20 14l-3 3-3-3M17 17V8a2 2 0 0 0-2-2h-5"/></svg></button><span class="count st-r">48</span></div>
+            <div class="act"><button class="l" type="button" aria-pressed="false" aria-label="Aimer"><svg viewBox="0 0 24 24"><path d="M12 21S3 15.5 3 9.5C3 6.5 5.2 4.5 7.8 4.5c1.7 0 3.3.9 4.2 2.4.9-1.5 2.5-2.4 4.2-2.4 2.6 0 4.8 2 4.8 5C21 15.5 12 21 12 21z"/></svg></button><span class="count st-l">356</span></div>
+            <div class="act"><span><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span></div>
+            <div class="act"><span><svg viewBox="0 0 24 24"><path d="M12 15V4M7 9l5-5 5 5M5 14v5h14v-5"/></svg></span></div>
+          </div>
+        </article>
+      </div>
+
+      <!-- ================= TWEET 2 ================= -->
+      <div class="slide">
+        <article class="tweet">
+          <div class="head">
+            <img class="avatar" src="https://via.placeholder.com/88" alt="Photo de profil">
+            <div class="who">
+              <span class="name">Autre personnage</span>
+              <span class="handle">@autre_perso</span>
+            </div>
+          </div>
+
+          <p class="content">Un deuxième tweet, d'un autre personnage, sans badge cette fois.</p>
+
+          <div class="media">
+            <img src="https://via.placeholder.com/600x600/e1e8ed/536471?text=Image+3" alt="Image 3">
+            <img src="https://via.placeholder.com/600x600/e1e8ed/536471?text=Image+4" alt="Image 4">
+          </div>
+
+          <p class="date"><b>18:02</b> · 22 nov. 2026 · <b>3,1 k</b> vues</p>
+
+          <div class="actions">
+            <div class="act"><span class="c"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg></span><span class="count">6</span></div>
+            <div class="act"><button class="r" type="button" aria-pressed="false" aria-label="Retweeter"><svg viewBox="0 0 24 24"><path d="M4 10l3-3 3 3M7 7v9a2 2 0 0 0 2 2h5M20 14l-3 3-3-3M17 17V8a2 2 0 0 0-2-2h-5"/></svg></button><span class="count st-r">7</span></div>
+            <div class="act"><button class="l" type="button" aria-pressed="false" aria-label="Aimer"><svg viewBox="0 0 24 24"><path d="M12 21S3 15.5 3 9.5C3 6.5 5.2 4.5 7.8 4.5c1.7 0 3.3.9 4.2 2.4.9-1.5 2.5-2.4 4.2-2.4 2.6 0 4.8 2 4.8 5C21 15.5 12 21 12 21z"/></svg></button><span class="count st-l">89</span></div>
+            <div class="act"><span><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span></div>
+            <div class="act"><span><svg viewBox="0 0 24 24"><path d="M12 15V4M7 9l5-5 5 5M5 14v5h14v-5"/></svg></span></div>
+          </div>
+        </article>
+      </div>
+
+      <!-- ================= TWEET 3 ================= -->
+      <div class="slide">
+        <article class="tweet">
+          <div class="head">
+            <img class="avatar" src="https://via.placeholder.com/88" alt="Photo de profil">
+            <div class="who">
+              <span class="name">
+                Nom du personnage
+                <svg class="badge" viewBox="0 0 24 24" aria-label="Compte certifié">
+                  <path d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91C2.88 9.33 2 10.57 2 12s.88 2.67 2.19 3.34c-.46 1.39-.2 2.9.81 3.91s2.52 1.26 3.91.8c.66 1.31 1.9 2.19 3.33 2.19s2.67-.88 3.34-2.19c1.39.46 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z"/>
+                </svg>
+              </span>
+              <span class="handle">@pseudo_du_perso</span>
+            </div>
+          </div>
+
+          <p class="content">Et un troisième tweet pour tester le défilement dans les deux sens.</p>
+
+          <div class="media single">
+            <img src="https://via.placeholder.com/1200x675/e1e8ed/536471?text=Image+5" alt="Image 5">
+          </div>
+
+          <p class="date"><b>09:15</b> · 21 nov. 2026 · <b>870</b> vues</p>
+
+          <div class="actions">
+            <div class="act"><span class="c"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg></span><span class="count">3</span></div>
+            <div class="act"><button class="r" type="button" aria-pressed="false" aria-label="Retweeter"><svg viewBox="0 0 24 24"><path d="M4 10l3-3 3 3M7 7v9a2 2 0 0 0 2 2h5M20 14l-3 3-3-3M17 17V8a2 2 0 0 0-2-2h-5"/></svg></button><span class="count st-r">1</span></div>
+            <div class="act"><button class="l" type="button" aria-pressed="false" aria-label="Aimer"><svg viewBox="0 0 24 24"><path d="M12 21S3 15.5 3 9.5C3 6.5 5.2 4.5 7.8 4.5c1.7 0 3.3.9 4.2 2.4.9-1.5 2.5-2.4 4.2-2.4 2.6 0 4.8 2 4.8 5C21 15.5 12 21 12 21z"/></svg></button><span class="count st-l">24</span></div>
+            <div class="act"><span><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span></div>
+            <div class="act"><span><svg viewBox="0 0 24 24"><path d="M12 15V4M7 9l5-5 5 5M5 14v5h14v-5"/></svg></span></div>
+          </div>
+        </article>
+      </div>
+
+      <!-- ================= TWEET 4 : citation d'un tweet avec vidéo ================= -->
+      <div class="slide">
+        <article class="tweet">
+          <div class="head">
+            <img class="avatar" src="https://via.placeholder.com/88" alt="Photo de profil">
+            <div class="who">
+              <span class="name">Autre personnage</span>
+              <span class="handle">@autre_perso</span>
+            </div>
+          </div>
+
+          <p class="content">Mon commentaire au-dessus du tweet cité. Regardez ça !</p>
+
+          <!-- ====== TWEET CITÉ ====== -->
+          <div class="quote">
+            <div class="q-head">
+              <img class="q-avatar" src="https://via.placeholder.com/44" alt="">
+              <span class="q-name">Nom du personnage cité</span>
+              <svg class="badge" viewBox="0 0 24 24" aria-label="Compte certifié">
+                  <path d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91C2.88 9.33 2 10.57 2 12s.88 2.67 2.19 3.34c-.46 1.39-.2 2.9.81 3.91s2.52 1.26 3.91.8c.66 1.31 1.9 2.19 3.33 2.19s2.67-.88 3.34-2.19c1.39.46 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z"/>
+                </svg>
+              <span class="q-handle">@perso_cite · 2 h</span>
+            </div>
+            <p class="q-text">Le texte du tweet cité, avec sa vidéo juste en dessous.</p>
+
+            <!-- Remplace LIEN_VIDEO.mp4 par un lien direct vers ta vidéo (.mp4)
+                 et le poster par l'image d'aperçu de la vidéo -->
+            <video class="q-video" controls playsinline preload="metadata"
+                   poster="https://via.placeholder.com/1200x675/e1e8ed/536471?text=Video">
+              <source src="LIEN_VIDEO.mp4" type="video/mp4">
+            </video>
+          </div>
+
+          <p class="date"><b>22:30</b> · 23 nov. 2026 · <b>5,6 k</b> vues</p>
+
+          <div class="actions">
+            <div class="act"><span class="c"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg></span><span class="count">9</span></div>
+            <div class="act"><button class="r" type="button" aria-pressed="false" aria-label="Retweeter"><svg viewBox="0 0 24 24"><path d="M4 10l3-3 3 3M7 7v9a2 2 0 0 0 2 2h5M20 14l-3 3-3-3M17 17V8a2 2 0 0 0-2-2h-5"/></svg></button><span class="count st-r">21</span></div>
+            <div class="act"><button class="l" type="button" aria-pressed="false" aria-label="Aimer"><svg viewBox="0 0 24 24"><path d="M12 21S3 15.5 3 9.5C3 6.5 5.2 4.5 7.8 4.5c1.7 0 3.3.9 4.2 2.4.9-1.5 2.5-2.4 4.2-2.4 2.6 0 4.8 2 4.8 5C21 15.5 12 21 12 21z"/></svg></button><span class="count st-l">142</span></div>
+            <div class="act"><span><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span></div>
+            <div class="act"><span><svg viewBox="0 0 24 24"><path d="M12 15V4M7 9l5-5 5 5M5 14v5h14v-5"/></svg></span></div>
+          </div>
+        </article>
+      </div>
+
+      <!-- ================= TWEET 5 : texte seul, sans image ================= -->
+      <div class="slide">
+        <article class="tweet">
+          <div class="head">
+            <img class="avatar" src="https://via.placeholder.com/88" alt="Photo de profil">
+            <div class="who">
+              <span class="name">
+                Nom du personnage
+                <svg class="badge" viewBox="0 0 24 24" aria-label="Compte certifié">
+                  <path d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91C2.88 9.33 2 10.57 2 12s.88 2.67 2.19 3.34c-.46 1.39-.2 2.9.81 3.91s2.52 1.26 3.91.8c.66 1.31 1.9 2.19 3.33 2.19s2.67-.88 3.34-2.19c1.39.46 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z"/>
+                </svg>
+              </span>
+              <span class="handle">@pseudo_du_perso</span>
+            </div>
+          </div>
+
+          <p class="content">Un cinquième tweet, uniquement du texte.
+Sans image ni vidéo, il est plus court que les autres.</p>
+
+          <p class="date"><b>07:40</b> · 24 nov. 2026 · <b>1,2 k</b> vues</p>
+
+          <div class="actions">
+            <div class="act"><span class="c"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg></span><span class="count">5</span></div>
+            <div class="act"><button class="r" type="button" aria-pressed="false" aria-label="Retweeter"><svg viewBox="0 0 24 24"><path d="M4 10l3-3 3 3M7 7v9a2 2 0 0 0 2 2h5M20 14l-3 3-3-3M17 17V8a2 2 0 0 0-2-2h-5"/></svg></button><span class="count st-r">3</span></div>
+            <div class="act"><button class="l" type="button" aria-pressed="false" aria-label="Aimer"><svg viewBox="0 0 24 24"><path d="M12 21S3 15.5 3 9.5C3 6.5 5.2 4.5 7.8 4.5c1.7 0 3.3.9 4.2 2.4.9-1.5 2.5-2.4 4.2-2.4 2.6 0 4.8 2 4.8 5C21 15.5 12 21 12 21z"/></svg></button><span class="count st-l">57</span></div>
+            <div class="act"><span><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span></div>
+            <div class="act"><span><svg viewBox="0 0 24 24"><path d="M12 15V4M7 9l5-5 5 5M5 14v5h14v-5"/></svg></span></div>
+          </div>
+        </article>
+      </div>
+
+    </div>
+  </div>
+
+  <button class="arrow" id="next" type="button" aria-label="Tweet suivant">
+    <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+  </button>
+
+</div>
+
+<script>
+  (function () {
+    var track  = document.getElementById('track');
+    var slides = track.querySelectorAll('.slide');
+    var prev   = document.getElementById('prev');
+    var next   = document.getElementById('next');
+    var index  = 0;
+
+    function show(i) {
+      // pas de boucle : on reste entre le premier et le dernier tweet
+      index = Math.max(0, Math.min(i, slides.length - 1));
+      track.style.transform = 'translateX(calc(' + (-index) + ' * (100% + var(--slide-gap))))';
+      for (var k = 0; k < slides.length; k++) {
+        slides[k].setAttribute('aria-hidden', k === index ? 'false' : 'true');
+      }
+      // flèche grisée et inactive aux extrémités
+      prev.disabled = (index === 0);
+      next.disabled = (index === slides.length - 1);
+    }
+
+    prev.addEventListener('click', function () { show(index - 1); });
+    next.addEventListener('click', function () { show(index + 1); });
+
+    // flèches du clavier
+    document.addEventListener('keydown', function (e) {
+      if (e.target && e.target.tagName === 'VIDEO') return;   // flèches = avance/retour dans la vidéo
+      if (e.key === 'ArrowLeft')  show(index - 1);
+      if (e.key === 'ArrowRight') show(index + 1);
+    });
+
+    // glissement au doigt (mobile)
+    var startX = null;
+    track.addEventListener('touchstart', function (e) {
+      // pas de glissement de tweet quand on touche la vidéo (barre de lecture)
+      startX = (e.target.closest && e.target.closest('video')) ? null : e.touches[0].clientX;
+    }, { passive: true });
+    track.addEventListener('touchend', function (e) {
+      if (startX === null) return;
+      var dx = e.changedTouches[0].clientX - startX;
+      if (Math.abs(dx) > 40) show(index + (dx < 0 ? 1 : -1));
+      startX = null;
+    });
+
+    // ----- J'aime / Retweet -----
+    function fmt(n) { return n.toLocaleString('fr-FR'); }
+
+    function setupToggle(tweet, btnSel, statSel) {
+      var btn  = tweet.querySelector(btnSel);
+      var stat = tweet.querySelector(statSel);
+      if (!btn) return;
+      var base = stat ? parseInt(stat.textContent.replace(/\D/g, ''), 10) || 0 : 0;
+
+      btn.addEventListener('click', function () {
+        var on = btn.classList.toggle('on');
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        if (stat) { stat.textContent = fmt(base + (on ? 1 : 0)); stat.classList.toggle('on', on); }
+
+        // relance l'animation uniquement quand on active
+        btn.classList.remove('pop');
+        if (on) { void btn.offsetWidth; btn.classList.add('pop'); }
+      });
+    }
+
+    var tweets = document.querySelectorAll('.tweet');
+    for (var t = 0; t < tweets.length; t++) {
+      setupToggle(tweets[t], '.actions .l', '.st-l');
+      setupToggle(tweets[t], '.actions .r', '.st-r');
+    }
+
+    show(0);
+  })();
+</script>
+
+</body>
+</html>
